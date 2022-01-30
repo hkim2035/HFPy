@@ -23,20 +23,23 @@ data fields = [findex,bbering,binclin,mdepth,psm,fstrike,fdip]로 구성
 # args: tuple 밀도, 기준심도, 상부하중,균열종류, 시추공방위각, 경사각, 심도, 균열폐쇄압력, 종균열방향, 0 or 경사균열 방위각, 경사각
 # ((밀도 N개), (기준심도 N개)), ...)
 
+
 def fs(nn: int, deg: list):
     nnn = np.repeat(nn, len(deg))
     return np.array(list(map(lambda ldeg, lnn: math.sin(math.radians(ldeg))**lnn, deg, nnn)))
 
+
 def fc(nn: int, deg: list):
     nnn = np.repeat(nn, len(deg))
     return np.array(list(map(lambda ldeg, lnn: math.cos(math.radians(ldeg))**lnn, deg, nnn)))
+
 
 def calMF(x0: list, data):
 
     global psc_final
 
     psc = np.zeros(len(data[0]))
-    
+
     [PN0, PE0, PV0, PNE0, PEV0, PVN0, alphaNN, alphaEE] = [
         np.repeat(item, len(data[0])) for item in x0]
     den, tdepth, over = [np.array(data[ii]) for ii in range(0, 3, 1)]
@@ -64,10 +67,10 @@ def calMF(x0: list, data):
         2., pi)[inc]*fs(1., 2.*psi)[inc] + PEV[inc]*fs(1., 2.*pi)[inc]*fs(1., psi)[inc] + PVN[inc]*fs(1., 2.*pi)[inc]*fc(1., psi)[inc]
 
     psc_final = psc
-    
+
     temp = (psm-psc)**2.
     temp = (temp.sum()/(len(temp)-1))**.5
-        
+
     return temp
 
 
@@ -108,8 +111,7 @@ if __name__ == "__main__":
     result = minimize(calMF, x0, data, bounds=bnds, tol=1.e-9, method='BFGS')
 
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(
+fig = go.Figure(go.Scatter(
     x=psm-psc_final,
     y=mdep,
     marker=dict(color="crimson", size=12),
@@ -117,11 +119,26 @@ fig.add_trace(go.Scatter(
     name="Psm",
 ))
 
-
 fig.update_layout(title="Ps,measured - Ps, calculated",
                   xaxis_title="Psm-Psc (MPa)",
-                  yaxis_title="Depth (m)", 
+                  yaxis_title="Depth (m)",
+                  autosize=False,
+                  width=600,
+                  height=800,
+                  margin=dict(
+                      l=50,
+                      r=50,
+                      b=50,
+                      t=50,
+                      pad=4
+                  ),
+                  paper_bgcolor="White",
                   )
-fig.update_yaxes(range=[0, max(mdep)*1.1], autorange="reversed", zeroline=True)
+
+fig.update_yaxes(
+    range=[math.ceil((max(mdep)*1.1)/10.)*10., 0], zeroline=True)
+fig.update_xaxes(range=[-max(abs(psm-psc_final)) *
+                 1.1, max(abs(psm-psc_final))*1.1])
+
 
 fig.show()
